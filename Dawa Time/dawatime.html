@@ -1,0 +1,745 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="description" content="Dawa Time - Medication Reminder App"/>
+  <meta name="theme-color" content="#6366f1"/>
+  <title>Dawa Time</title>
+
+  <link rel="icon" type="image/svg+xml"
+        href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%95%92%3C/text%3E%3C/svg%3E">
+
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <style>
+    :root {
+      --color-blue-50:#eff6ff;--color-blue-500:#3b82f6;--color-blue-600:#2563eb;--color-blue-700:#1d4ed8;
+      --color-green-50:#f0fdf4;--color-green-500:#22c55e;--color-green-600:#16a34a;--color-green-700:#15803d;
+      --color-orange-50:#fff7ed;--color-orange-500:#f97316;--color-orange-700:#c2410c;
+      --color-purple-50:#faf5ff;--color-purple-500:#a855f7;--color-purple-700:#7e22ce;
+      --color-pink-50:#fdf2f8;--color-pink-500:#ec4899;--color-pink-700:#be185d;
+      --color-red-50:#fef2f2;--color-red-500:#ef4444;--color-red-600:#dc2626;--color-red-700:#b91c1c;
+      --color-indigo-50:#eef2ff;--color-indigo-600:#4f46e5;--color-indigo-950:#1e1b4b;
+      --color-gray-900:#111827;--color-gray-800:#1f2937;--color-gray-700:#374151;
+
+      --safe-bottom: env(safe-area-inset-bottom);
+      --safe-top: env(safe-area-inset-top);
+    }
+
+    html, body { height: 100%; }
+    body { min-height: 100dvh; -webkit-text-size-adjust: 100%; }
+    * { -webkit-tap-highlight-color: transparent; }
+
+    .safe-bottom { padding-bottom: calc(0.5rem + var(--safe-bottom)); }
+    .safe-top { padding-top: var(--safe-top); }
+
+    .install-prompt{display:none;position:fixed;bottom:calc(80px + var(--safe-bottom));left:50%;transform:translateX(-50%);z-index:100;animation:slideUp .3s ease-out}
+    @keyframes slideUp{from{transform:translateX(-50%) translateY(100px);opacity:0}to{transform:translateX(-50%) translateY(0);opacity:1}}
+
+    .dark-mode{background:linear-gradient(to bottom right,#0f172a,#1e1b4b,#312e81);color:#e5e7eb}
+    .dark-mode .card{background:linear-gradient(to bottom right,#1e293b,#1e1b4b);color:#f3f4f6;border-color:#4b5563;box-shadow:0 4px 6px -1px rgba(0,0,0,.3)}
+    .dark-mode input,.dark-mode textarea,.dark-mode select{background:#374151;border-color:#4b5563;color:#f3f4f6}
+    .dark-mode input:focus,.dark-mode textarea:focus,.dark-mode select:focus{border-color:#6366f1;background:#4b5563}
+    
+    .dark-mode button.bg-white { background:#374151; color:#f3f4f6; border-color:#4b5563; }
+    .dark-mode button.bg-white:hover { background:#4b5563; }
+
+    .dark-mode .text-gray-600{color:#9ca3af!important}
+    .dark-mode .text-gray-500{color:#d1d5db!important}
+    .dark-mode .bg-blue-50{background-color:rgba(99,102,241,.1)!important}
+    .dark-mode .bg-green-50{background-color:rgba(34,197,94,.1)!important}
+    .dark-mode .bg-orange-50{background-color:rgba(249,115,22,.1)!important}
+    .dark-mode .bg-purple-50{background-color:rgba(168,85,247,.1)!important}
+    .dark-mode .bg-pink-50{background-color:rgba(236,72,153,.1)!important}
+    .dark-mode .border-b,.dark-mode .border-t{border-color:#374151!important}
+    .dark-mode header{background:linear-gradient(to right,#4338ca,#7c3aed)!important}
+  </style>
+</head>
+<body>
+  <div id="app"></div>
+
+  <div id="installPrompt" class="install-prompt">
+    <div class="bg-blue-600 text-white px-6 py-4 rounded-lg shadow-lg flex items-center gap-4">
+      <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+      </svg>
+      <div>
+        <div class="font-semibold">Install Dawa Time</div>
+        <div class="text-sm opacity-90">Get quick access from your desktop</div>
+      </div>
+      <button id="installBtn" class="bg-white text-blue-600 px-4 py-2 rounded font-semibold hover:bg-blue-50">Install</button>
+      <button id="dismissBtn" class="text-white opacity-75 hover:opacity-100" aria-label="Dismiss">
+        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+          <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <script type="module">
+    import React from 'https://esm.sh/react@18.3.1';
+    import ReactDOM from 'https://esm.sh/react-dom@18.3.1/client';
+    const { useState, useEffect, createElement: h } = React;
+
+    const isSecureOrigin = () => location.protocol === 'https:' || location.hostname === 'localhost';
+    const isIosSafari = () => /iPad|iPhone|iPod/.test(navigator.userAgent) && /Safari/.test(navigator.userAgent) && !/CriOS|FxiOS|EdgiOS/.test(navigator.userAgent);
+    function canUseNotifications() { return ('Notification' in window) && isSecureOrigin(); }
+    async function ensurePermission() {
+      if (!('Notification' in window)) return 'unsupported';
+      if (Notification.permission === 'granted') return 'granted';
+      if (Notification.permission === 'denied') return 'denied';
+      try { return await Notification.requestPermission(); } catch { return Notification.permission; }
+    }
+    function sendTestNotification() {
+      if (!('Notification' in window)) { alert('This browser does not support Notifications.'); return; }
+      if (Notification.permission !== 'granted') { alert('Please allow notifications first.'); return; }
+      new Notification('Dawa Time — Test', {
+        body: 'If you can read this, notifications are working ✅',
+        icon: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTI4IiBoZWlnaHQ9IjEyOCIgdmlld0JveD0iMCAwIDEyOCAxMjgiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iNjQiIGN5PSI2NCIgcj0iNDgiIGZpbGw9IiM2MzY2ZjEiLz48cGF0aCBkPSJNOTYgNjRoMTZhOCA4IDAgMCAwLTggOHYtMTZhOCA4IDAgMCAwLTggOGgtMTZhOCA4IDAgMCAwIDggOHYxNmE4IDggMCAwIDAgOCA4eiIgZmlsbD0iI2Y2ZjZmYSIvPjwvc3ZnPg=='
+      });
+    }
+
+    const Button = ({ children, onClick, disabled, className = '', variant = 'default', size = 'default' }) => {
+      const base = 'inline-flex items-center justify-center rounded-md font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none';
+      const variants = {
+        default: 'bg-blue-600 text-white hover:bg-blue-700 focus:ring-blue-500',
+        outline: 'border border-gray-300 bg-white hover:bg-gray-50 focus:ring-blue-500',
+        ghost: 'hover:bg-gray-100 focus:ring-gray-300'
+      };
+      const sizes = { default: 'h-10 px-4 py-2', sm: 'h-9 px-3 text-sm' };
+      return h('button', { onClick, disabled, className: `${base} ${variants[variant]} ${sizes[size]} ${className}` }, children);
+    };
+    const Input = ({ type='text', value, onChange, placeholder, className='', min }) =>
+      h('input', { type, value, onChange, placeholder, min, className: `flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${className}` });
+    const Card = ({ children, className='' }) => h('div', { className: `card rounded-lg border bg-white shadow-sm ${className}` }, children);
+    
+    const Dialog = ({ open, onOpenChange, children }) => {
+      if (!open) return null;
+      return h('div', { className: 'fixed inset-0 z-50 flex items-center justify-center' }, [
+        h('div', { key: 'overlay', className: 'fixed inset-0 bg-black/50', onClick: () => onOpenChange(false) }),
+        h('div', { key: 'content', className: 'relative z-50 w-full max-w-lg card bg-white rounded-lg shadow-lg p-4 sm:p-6 max-h-[90vh] overflow-y-auto m-2 sm:m-4' }, children),
+      ]);
+    };
+
+    function App() {
+      const [medications, setMedications] = useState([]);
+      const [intakeLogs, setIntakeLogs] = useState([]);
+      const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+      const [newMed, setNewMed] = useState({
+        name:'', dosage:'', scheduleTimes:[''], instructions:'', description:'',
+        startDate: new Date().toISOString().split('T')[0], endDate:'', frequency:'daily', color:'blue'
+      });
+      const [activeTab, setActiveTab] = useState('home');
+      const [settings, setSettings] = useState({
+        darkMode:false, notifications:true, soundEnabled:true, alertTiming:'5', vibration:true,
+        quietHours:false, quietStart:'22:00', quietEnd:'07:00', language:'en', fontSize:'medium',
+        autoRefill:true, refillDays:'7', showMissedDose:true, exportData:false
+      });
+
+      useEffect(() => {
+        try {
+          const saved = localStorage.getItem('medications'); if (saved) setMedications(JSON.parse(saved));
+          const savedLogs = localStorage.getItem('intakeLogs'); if (savedLogs) setIntakeLogs(JSON.parse(savedLogs));
+          const savedSettings = localStorage.getItem('settings'); if (savedSettings) setSettings(JSON.parse(savedSettings));
+        } catch {}
+      }, []);
+
+      useEffect(() => { localStorage.setItem('medications', JSON.stringify(medications)); }, [medications]);
+      useEffect(() => {
+        localStorage.setItem('settings', JSON.stringify(settings));
+        document.body.className = settings.darkMode ? 'dark-mode' : '';
+        
+        const fontSizes = { small: '14px', medium: '16px', large: '18px' };
+        document.documentElement.style.fontSize = fontSizes[settings.fontSize] || '16px';
+      }, [settings]);
+
+      useEffect(() => {
+        (async () => {
+          if (!settings.notifications) return;
+          if (!canUseNotifications()) return;
+          if (Notification.permission === 'default') {
+            await ensurePermission();
+          }
+        })();
+      }, [settings.notifications]);
+
+      useEffect(() => {
+        const checkAndNotify = () => {
+          if (!canUseNotifications()) return;
+          if (Notification.permission !== 'granted') return;
+
+          const now = new Date(); now.setSeconds(0,0);
+          const toHM = (d) => `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+          const currentHM = toHM(now);
+
+          const inQuiet = (() => {
+            if (!settings.quietHours) return false;
+            const start = settings.quietStart, end = settings.quietEnd;
+            if (start === end) return false;
+            if (start < end) return currentHM >= start && currentHM < end;
+            return currentHM >= start || currentHM < end;
+          })();
+          if (inQuiet) return;
+
+          medications.forEach((med) => {
+            med.scheduleTimes.forEach((time) => {
+              if (!time) return;
+              const [h,m] = time.split(':').map(Number);
+              const alertAt = new Date(now);
+              alertAt.setHours(h, m, 0, 0);
+              alertAt.setMinutes(alertAt.getMinutes() - parseInt(settings.alertTiming || '0', 10));
+              if (toHM(alertAt) === currentHM) {
+                new Notification('Dawa Time Reminder', {
+                  body: `Time to take ${med.name} - ${med.dosage}`,
+                  icon: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTI4IiBoZWlnaHQ9IjEyOCIgdmlld0JveD0iMCAwIDEyOCAxMjgiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iNjQiIGN5PSI2NCIgcj0iNDgiIGZpbGw9IiM2MzY2ZjEiLz48cGF0aCBkPSJNOTYgNjRoMTZhOCA4IDAgMCAwLTggOHYtMTZhOCA4IDAgMCAwLTggOGgtMTZhOCA4IDAgMCAwIDggOHYxNmE4IDggMCAwIDAgOCA4eiIgZmlsbD0iI2Y2ZjZmYSIvPjwvc3ZnPg==',
+                  requireInteraction: true
+                });
+                if (settings.soundEnabled) {
+                  const audio = new Audio('data:audio/wav;base64,UklGRlQFAABXQVZFZm10IBAAAAABAAEAIlYAAIhYAQACABAAZGF0YTAFAAAAAA==');
+                  audio.play().catch(() => {});
+                }
+                if (settings.vibration && 'vibrate' in navigator) navigator.vibrate([200,100,200]);
+              }
+            });
+          });
+        };
+
+        const interval = setInterval(checkAndNotify, 60_000);
+        checkAndNotify();
+        return () => clearInterval(interval);
+      }, [medications, settings]);
+
+      const handleAddMedication = () => {
+        if (newMed.name && newMed.dosage) {
+          setMedications((prev) => [...prev, { ...newMed, id: Date.now() }]);
+          setNewMed({
+            name:'', dosage:'', scheduleTimes:[''], instructions:'', description:'',
+            startDate: new Date().toISOString().split('T')[0], endDate:'', frequency:'daily', color:'blue'
+          });
+          setIsAddDialogOpen(false);
+        }
+      };
+
+      const handleDeleteMedication = (id) => {
+        if (confirm('Are you sure you want to delete this medication?')) {
+          setMedications((prev) => prev.filter(m => m.id !== id));
+        }
+      };
+
+      const handleMarkTaken = (medId, time) => {
+        const today = new Date().toISOString().split('T')[0];
+        const logEntry = { medId, date: today, time, timestamp: new Date().toISOString(), taken: true };
+        const updatedLogs = [...intakeLogs, logEntry];
+        setIntakeLogs(updatedLogs);
+        localStorage.setItem('intakeLogs', JSON.stringify(updatedLogs));
+
+        if (canUseNotifications() && Notification.permission === 'granted') {
+          const med = medications.find(m => m.id === medId);
+          new Notification('Medication Taken ✓', {
+            body: `${med?.name ?? 'Medication'} marked as taken at ${time}`,
+            icon: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTI4IiBoZWlnaHQ9IjEyOCIgdmlld0JveD0iMCAwIDEyOCAxMjgiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iNjQiIGN5PSI2NCIgcj0iNDgiIGZpbGw9IiMyMmM1NWUiLz48cGF0aCBkPSJNODUgNTJsLTI5IDI5LTEzLTEzLTggOCAyMSAyMSAzNy0zN3oiIGZpbGw9IiNmZmYiLz48L3N2Zz4='
+          });
+        }
+      };
+
+      const isMedicationTaken = (medId, time) => {
+        const today = new Date().toISOString().split('T')[0];
+        return intakeLogs.some(log => log.medId === medId && log.date === today && log.time === time);
+      };
+
+      const getTodayStats = () => {
+        const today = new Date().toISOString().split('T')[0];
+        const todayLogs = intakeLogs.filter(log => log.date === today);
+        let totalDoses = 0;
+        medications.forEach(m => { totalDoses += m.scheduleTimes.filter(Boolean).length; });
+        return { taken: todayLogs.length, total: totalDoses, percentage: totalDoses > 0 ? Math.round((todayLogs.length / totalDoses) * 100) : 0 };
+      };
+
+      const addScheduleTime = () => setNewMed(s => ({...s, scheduleTimes:[...s.scheduleTimes, '' ]}));
+      const removeScheduleTime = (index) => {
+        setNewMed(s => {
+          const times = s.scheduleTimes.filter((_, i) => i !== index);
+          return { ...s, scheduleTimes: times.length ? times : [''] };
+        });
+      };
+      const updateScheduleTime = (index, value) => {
+        setNewMed(s => {
+          const times = [...s.scheduleTimes]; times[index] = value;
+          return { ...s, scheduleTimes: times };
+        });
+      };
+
+      const colorClasses = {
+        blue:'bg-blue-50 border-blue-600',
+        green:'bg-green-50 border-green-600',
+        orange:'bg-orange-50 border-orange-700',
+        purple:'bg-purple-50 border-purple-700',
+        pink:'bg-pink-50 border-pink-700'
+      };
+
+      return h('div', { className:'min-h-screen pb-16' }, [
+        h('header', { key:'header', className:`${settings.darkMode ? '' : 'bg-gradient-to-r from-blue-600 to-purple-600'} text-white safe-top py-2 px-3 shadow-md transition-all duration-300` },
+          h('div', { className:'max-w-7xl mx-auto flex justify-between items-center' }, [
+            h('div', { key:'title', className:'flex items-center gap-2' }, [
+              h('h1', { className:'text-xl sm:text-2xl font-bold' }, 'Dawa Time'),
+              h('span', { className:'text-xl sm:text-2xl' }, '💊')
+            ]),
+            h('div', { key:'info', className:'text-right hidden sm:block' }, [
+              h('div', { className:'text-xs opacity-90' }, new Date().toLocaleDateString('en-US',{ weekday:'short', month:'short', day:'numeric' })),
+              h('div', { className:'text-base font-semibold' }, new Date().toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' }))
+            ])
+          ])
+        ),
+
+        h('main', { key:'main', className:'p-3 sm:p-4' }, [
+          activeTab === 'home' && h('div', { key:'home', className:'max-w-6xl mx-auto space-y-6' }, [
+            h(Card, { key:'stats', className:`${settings.darkMode ? 'card' : ''} bg-gradient-to-r from-blue-50 to-purple-50 ${settings.darkMode ? 'from-blue-900/20 to-purple-900/20' : ''}` }, [
+              h('div', { className:'p-4 sm:p-6' }, [
+                h('h2', { className:'text-lg font-semibold mb-4' }, "Today's Progress"),
+                h('div', { className:'grid grid-cols-3 gap-4 text-center' }, [
+                  h('div', null, [ h('div', { className:'text-xl sm:text-2xl font-bold text-blue-600' }, getTodayStats().taken), h('div', { className:'text-xs text-gray-600' }, 'Taken') ]),
+                  h('div', null, [ h('div', { className:'text-xl sm:text-2xl font-bold text-purple-600' }, getTodayStats().total), h('div', { className:'text-xs text-gray-600' }, 'Total') ]),
+                  h('div', null, [ h('div', { className:'text-xl sm:text-2xl font-bold text-green-600' }, `${getTodayStats().percentage}%`), h('div', { className:'text-xs text-gray-600' }, 'Complete') ]),
+                ]),
+                h('div', { className:'mt-4' }, [
+                  h('div', { className:'w-full bg-gray-200 rounded-full h-2' },
+                    h('div', { className:'bg-gradient-to-r from-blue-600 to-green-600 h-2 rounded-full transition-all duration-500', style:{ width:`${getTodayStats().percentage}%` } })
+                  )
+                ])
+              ])
+            ]),
+
+            h(Card, { key:'schedule', className: settings.darkMode ? 'card' : '' }, [
+              h('div', { key:'header', className:'p-4 sm:p-6 border-b' }, [
+                h('h2', { className:'text-xl font-semibold' }, "Today's Schedule"),
+                h('p', { className:'text-sm text-gray-600 mt-1' }, new Date().toLocaleDateString('en-US',{ weekday:'long', year:'numeric', month:'long', day:'numeric' }))
+              ]),
+              h('div', { key:'content', className:'p-4 sm:p-6' },
+                medications.length === 0
+                  ? h('div', { className:'text-center py-8 text-gray-500' }, [
+                      h('div', { className:'text-6xl mb-4' }, '💊'),
+                      h('div', null, 'No medications scheduled for today'),
+                      h('button', { onClick: () => setActiveTab('medications'), className:'mt-4 text-blue-600 hover:underline' }, 'Add your first medication →')
+                    ])
+                  : medications.map((med) =>
+                      h('div', { key: med.id, className:`${colorClasses[med.color]} p-4 rounded-lg border-l-4 mb-3 relative` }, [
+                        h('button', { onClick: () => handleDeleteMedication(med.id), className:'absolute top-2 right-2 w-6 h-6 rounded-full bg-red-500 text-white hover:bg-red-600 transition-colors flex items-center justify-center text-xs font-bold' }, '✕'),
+                        h('div', { key:'info', className:'pr-8' }, [
+                          h('div', { className:'flex justify-between items-start mb-3' }, [
+                            h('div', { className:'flex-1' }, [
+                              h('h3', { className:'font-semibold text-lg' }, med.name),
+                              h('p', { className:'text-sm text-gray-600' }, med.dosage),
+                              med.description && h('p', { className:'text-xs text-gray-500 mt-1' }, med.description)
+                            ]),
+                            h('div', { className:'text-right' }, [
+                              h('div', { className:'text-xs text-gray-500' },
+                                med.frequency === 'daily' ? 'Once daily' :
+                                med.frequency === 'twice' ? 'Twice daily' :
+                                med.frequency === 'thrice' ? 'Three times daily' :
+                                med.frequency === 'four' ? 'Four times daily' :
+                                med.frequency === 'every4hours' ? 'Every 4 hours' :
+                                med.frequency === 'every6hours' ? 'Every 6 hours' :
+                                med.frequency === 'every8hours' ? 'Every 8 hours' :
+                                med.frequency === 'every12hours' ? 'Every 12 hours' :
+                                med.frequency === 'weekly' ? 'Weekly' :
+                                med.frequency === 'biweekly' ? 'Every 2 weeks' :
+                                med.frequency === 'monthly' ? 'Monthly' :
+                                med.frequency === 'asNeeded' ? 'As needed (PRN)' :
+                                med.frequency === 'custom' ? 'Custom schedule' : med.frequency
+                              )
+                            ])
+                          ]),
+                          h('div', { className:'flex flex-wrap gap-2' },
+                            med.scheduleTimes.filter(Boolean).map((time, idx) => {
+                              const taken = isMedicationTaken(med.id, time);
+                              return h('button', {
+                                key: idx,
+                                onClick: () => !taken && handleMarkTaken(med.id, time),
+                                className:`px-3 py-1 rounded-full text-sm font-medium transition-all ${taken ? 'bg-green-500 text-white cursor-default' : 'bg-white text-gray-700 hover:bg-blue-500 hover:text-white border'}`,
+                                disabled: taken
+                              }, [ taken && h('span', { className:'mr-1' }, '✓'), time ]);
+                            })
+                          ),
+                          (() => {
+                            const now = new Date(); const nowHM = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+                            if (!settings.showMissedDose) return null;
+                            const missed = med.scheduleTimes.filter(t => t && t < nowHM && !isMedicationTaken(med.id, t));
+                            return missed.length ? h('div', { className:'mt-2 text-xs text-red-600' }, `Missed: ${missed.join(', ')}`) : null;
+                          })()
+                        ])
+                      ])
+                    )
+              )
+            ])
+          ]),
+
+          activeTab === 'medications' && h('div', { key:'meds', className:'max-w-6xl mx-auto' }, [
+            h('div', { key:'header', className:'flex justify-end mb-6' }, h(Button, { onClick: () => setIsAddDialogOpen(true) }, '+ Add Medication')),
+            medications.length === 0
+              ? h('div', { key:'empty', className:'text-center py-16' }, [
+                  h('div', { className:'inline-flex h-20 w-20 items-center justify-center rounded-full bg-blue-100 mb-4' }, '💊'),
+                  h('h2', { className:'text-xl font-semibold mb-2' }, 'No medications yet'),
+                  h('p', { className:'text-gray-600' }, 'Start tracking by adding your first medication')
+                ])
+              : h('div', { key:'grid', className:'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4' },
+                  medications.map((med, i) =>
+                    h(Card, { key:i, className:`${colorClasses[med.color]} border-l-4 ${settings.darkMode ? 'card' : ''} relative` }, [
+                      h('button', { key:'delete', onClick: () => handleDeleteMedication(med.id), className:'absolute top-2 right-2 w-8 h-8 rounded-full bg-red-500 text-white hover:bg-red-600 transition-colors flex items-center justify-center text-sm font-bold shadow-md' }, '✕'),
+                      h('div', { key:'header', className:'p-4 sm:p-6 border-b' }, [
+                        h('h3', { className:'font-semibold text-lg pr-8' }, med.name),
+                        h('p', { className:'text-sm text-gray-600' }, med.dosage),
+                        med.description && h('p', { className:'text-xs text-gray-500 mt-2' }, med.description)
+                      ]),
+                      h('div', { key:'content', className:'p-4 sm:p-6 space-y-2' }, [
+                        h('div', { className:'flex items-center gap-2' }, [ h('span','🕐'), h('span',{ className:'text-sm' }, med.scheduleTimes.filter(Boolean).join(', ') || 'No times set') ]),
+                        h('div', { className:'flex items-center gap-2' }, [ h('span','📅'), h('span',{ className:'text-sm' }, `${med.startDate || 'Start anytime'}${med.endDate ? ` - ${med.endDate}` : ''}`) ]),
+                        h('div', { className:'flex items-center gap-2' }, [ h('span','🔄'), h('span',{ className:'text-sm' },
+                          med.frequency === 'daily' ? 'Once daily' :
+                          med.frequency === 'twice' ? 'Twice daily' :
+                          med.frequency === 'thrice' ? 'Three times daily' :
+                          med.frequency === 'four' ? 'Four times daily' :
+                          med.frequency === 'every4hours' ? 'Every 4 hours' :
+                          med.frequency === 'every6hours' ? 'Every 6 hours' :
+                          med.frequency === 'every8hours' ? 'Every 8 hours' :
+                          med.frequency === 'every12hours' ? 'Every 12 hours' :
+                          med.frequency === 'weekly' ? 'Weekly' :
+                          med.frequency === 'biweekly' ? 'Every 2 weeks' :
+                          med.frequency === 'monthly' ? 'Monthly' :
+                          med.frequency === 'asNeeded' ? 'As needed (PRN)' :
+                          med.frequency === 'custom' ? 'Custom schedule' : 'Once daily'
+                        ) ]),
+                        med.instructions && h('div', { className:'text-xs text-gray-600 pt-2 border-t mt-2' }, `Instructions: ${med.instructions}`)
+                      ])
+                    ])
+                  )
+                )
+          ]),
+
+          activeTab === 'settings' && h('div', { key:'settings', className:'max-w-4xl mx-auto space-y-4 pb-8' }, [
+            h(Card, { key:'display', className: settings.darkMode ? 'card' : '' }, [
+              h('div', { key:'header', className:'p-4 sm:p-6 border-b' }, [
+                h('h2', { className:'text-xl font-semibold flex items-center gap-2' }, ['🎨','Display Settings']),
+                h('p', { className:'text-sm text-gray-600 mt-1' }, 'Customize the appearance')
+              ]),
+              h('div', { key:'content', className:'p-4 sm:p-6 space-y-4' }, [
+                h('div', { className:'flex items-center justify-between' }, [
+                  h('div', null, [ h('div', { className:'text-base font-medium' }, 'Dark Mode'), h('p', { className:'text-sm text-gray-600' }, 'Use dark theme for the app') ]),
+                  h('button', { onClick: () => setSettings(s => ({...s, darkMode: !s.darkMode})), className:`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${settings.darkMode ? 'bg-blue-600' : 'bg-gray-300'}` },
+                    h('span', { className:`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${settings.darkMode ? 'translate-x-6' : 'translate-x-1'}` })
+                  )
+                ]),
+                h('div', { className:'flex items-center justify-between' }, [
+                  h('div', null, [ h('div', { className:'text-base font-medium' }, 'Font Size'), h('p', { className:'text-sm text-gray-600' }, 'Adjust text size for better readability') ]),
+                  h('select', { value: settings.fontSize, onChange: (e) => setSettings(s => ({...s, fontSize:e.target.value})), className:'px-3 py-1 rounded-md border text-sm' }, [
+                    h('option', { value:'small' }, 'Small'),
+                    h('option', { value:'medium' }, 'Medium'),
+                    h('option', { value:'large' }, 'Large'),
+                  ])
+                ])
+              ])
+            ]),
+
+            h(Card, { key:'notifications', className: settings.darkMode ? 'card' : '' }, [
+              h('div', { key:'header', className:'p-4 sm:p-6 border-b' }, [
+                h('h2', { className:'text-xl font-semibold flex items-center gap-2' }, ['🔔','Notifications']),
+                h('p', { className:'text-sm text-gray-600 mt-1' }, 'Configure alerts and reminders')
+              ]),
+              h('div', { key:'content', className:'p-4 sm:p-6 space-y-4' }, [
+                (!isSecureOrigin() || isIosSafari()) && h('div', { className:'text-sm p-3 rounded border bg-orange-50 border-orange-700 text-orange-700' },
+                  !isSecureOrigin()
+                    ? 'Notifications require HTTPS or localhost. Open this page over https:// to enable notifications.'
+                    : 'On iOS Safari, web notifications only work for installed PWAs with a service worker. In the browser tab, notifications are blocked.'
+                ),
+
+                h('div', { className:'flex items-center justify-between' }, [
+                  h('div', null, [ h('div', { className:'text-base font-medium' }, 'Enable Notifications'), h('p', { className:'text-sm text-gray-600' }, 'Receive medication reminders') ]),
+                  h('button', {
+                    onClick: async () => {
+                      if (!settings.notifications) {
+                        if (!canUseNotifications()) {
+                          alert('Notifications need HTTPS (or localhost), and a supported browser.');
+                          return;
+                        }
+                        const res = await ensurePermission();
+                        if (res === 'granted') {
+                          setSettings(s => ({...s, notifications:true}));
+                          new Notification('Dawa Time', {
+                            body:'Notifications enabled successfully!',
+                            icon:'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTI4IiBoZWlnaHQ9IjEyOCIgdmlld0JveD0iMCAwIDEyOCAxMjgiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iNjQiIGN5PSI2NCIgcj0iNDgiIGZpbGw9IiM2MzY2ZjEiLz48cGF0aCBkPSJNOTYgNjRoMTZhOCA4IDAgMCAwLTggOHYtMTZhOCA4IDAgMCAwLTggOGgtMTZhOCA4IDAgMCAwIDggOHYxNmE4IDggMCAwIDAgOCA4eiIgZmlsbD0iI2Y2ZjZmYSIvPjwvc3ZnPg=='
+                          });
+                        } else if (res === 'denied') {
+                          alert('You blocked notifications. You can re-enable them in your browser site settings.');
+                        } else {
+                          alert('Permission not granted. Please allow notifications when prompted.');
+                        }
+                      } else {
+                        setSettings(s => ({...s, notifications:false}));
+                      }
+                    },
+                    className:`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${settings.notifications ? 'bg-blue-600' : 'bg-gray-300'}`
+                  }, h('span', { className:`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${settings.notifications ? 'translate-x-6' : 'translate-x-1'}` }))
+                ]),
+
+                h('div', { className:'flex items-center justify-between' }, [
+                  h('div', null, [ h('div', { className:'text-base font-medium' }, 'Send Test Notification'), h('p', { className:'text-sm text-gray-600' }, 'Verify your browser shows alerts') ]),
+                  h(Button, {
+                    onClick: sendTestNotification,
+                    disabled: !(canUseNotifications() && Notification.permission === 'granted'),
+                    className: !(canUseNotifications() && Notification.permission === 'granted') ? 'opacity-50 cursor-not-allowed' : ''
+                  }, 'Test')
+                ]),
+
+                h('div', { className:'flex items-center justify-between' }, [
+                  h('div', null, [ h('div', { className:'text-base font-medium' }, 'Sound Alerts'), h('p', { className:'text-sm text-gray-600' }, 'Play sound with notifications') ]),
+                  h('button', {
+                    onClick: () => setSettings(s => ({...s, soundEnabled: !s.soundEnabled})),
+                    disabled: !settings.notifications,
+                    className:`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${settings.soundEnabled && settings.notifications ? 'bg-blue-600' : 'bg-gray-300'} ${!settings.notifications ? 'opacity-50' : ''}`
+                  }, h('span', { className:`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${settings.soundEnabled && settings.notifications ? 'translate-x-6' : 'translate-x-1'}` }))
+                ]),
+
+                h('div', { className:'flex items-center justify-between' }, [
+                  h('div', null, [ h('div', { className:'text-base font-medium' }, 'Vibration'), h('p', { className:'text-sm text-gray-600' }, 'Vibrate on notifications (mobile)') ]),
+                  h('button', {
+                    onClick: () => setSettings(s => ({...s, vibration: !s.vibration})),
+                    disabled: !settings.notifications,
+                    className:`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${settings.vibration && settings.notifications ? 'bg-blue-600' : 'bg-gray-300'} ${!settings.notifications ? 'opacity-50' : ''}`
+                  }, h('span', { className:`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${settings.vibration && settings.notifications ? 'translate-x-6' : 'translate-x-1'}` }))
+                ]),
+
+                h('div', { className:'flex items-center justify-between' }, [
+                  h('div', null, [ h('div', { className:'text-base font-medium' }, 'Alert Timing'), h('p', { className:'text-sm text-gray-600' }, 'Minutes before dose time') ]),
+                  h('select', {
+                    value: settings.alertTiming,
+                    onChange: (e) => setSettings(s => ({...s, alertTiming:e.target.value})),
+                    disabled: !settings.notifications,
+                    className:`px-3 py-1 rounded-md border text-sm ${!settings.notifications ? 'opacity-50' : ''}`
+                  }, [
+                    h('option', { value:'0' }, 'At dose time'),
+                    h('option', { value:'5' }, '5 minutes before'),
+                    h('option', { value:'10' }, '10 minutes before'),
+                    h('option', { value:'15' }, '15 minutes before'),
+                    h('option', { value:'30' }, '30 minutes before'),
+                  ])
+                ]),
+
+                h('div', { className:'space-y-3' }, [
+                  h('div', { className:'flex items-center justify-between' }, [
+                    h('div', null, [ h('div', { className:'text-base font-medium' }, 'Quiet Hours'), h('p', { className:'text-sm text-gray-600' }, 'Silence notifications during sleep') ]),
+                    h('button', {
+                      onClick: () => setSettings(s => ({...s, quietHours: !s.quietHours})),
+                      disabled: !settings.notifications,
+                      className:`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${settings.quietHours && settings.notifications ? 'bg-blue-600' : 'bg-gray-300'} ${!settings.notifications ? 'opacity-50' : ''}`
+                    }, h('span', { className:`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${settings.quietHours && settings.notifications ? 'translate-x-6' : 'translate-x-1'}` }))
+                  ]),
+                  settings.quietHours && settings.notifications && h('div', { className:'flex gap-4 ml-4' }, [
+                    h('div', { className:'flex items-center gap-2' }, [ h('span', { className:'text-sm' }, 'From:'), h('input', { type:'time', value: settings.quietStart, onChange: (e) => setSettings(s => ({...s, quietStart:e.target.value})), className:'px-2 py-1 rounded border text-sm' }) ]),
+                    h('div', { className:'flex items-center gap-2' }, [ h('span', { className:'text-sm' }, 'To:'), h('input', { type:'time', value: settings.quietEnd, onChange: (e) => setSettings(s => ({...s, quietEnd:e.target.value})), className:'px-2 py-1 rounded border text-sm' }) ])
+                  ])
+                ])
+              ])
+            ]),
+
+            h(Card, { key:'advanced', className: settings.darkMode ? 'card' : '' }, [
+              h('div', { key:'header', className:'p-4 sm:p-6 border-b' }, [
+                h('h2', { className:'text-xl font-semibold flex items-center gap-2' }, ['⚙️','Advanced Settings']),
+                h('p', { className:'text-sm text-gray-600 mt-1' }, 'Additional features and options')
+              ]),
+              h('div', { key:'content', className:'p-4 sm:p-6 space-y-4' }, [
+                h('div', { className:'flex items-center justify-between' }, [
+                  h('div', null, [ h('div', { className:'text-base font-medium' }, 'Auto Refill Reminder'), h('p', { className:'text-sm text-gray-600' }, 'Alert when medication is running low') ]),
+                  h('button', { onClick: () => setSettings(s => ({...s, autoRefill: !s.autoRefill})), className:`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${settings.autoRefill ? 'bg-blue-600' : 'bg-gray-300'}` },
+                    h('span', { className:`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${settings.autoRefill ? 'translate-x-6' : 'translate-x-1'}` })
+                  )
+                ]),
+                settings.autoRefill && h('div', { className:'flex items-center justify-between ml-4' }, [
+                  h('div', null, [ h('div', { className:'text-sm font-medium' }, 'Days before empty'), h('p', { className:'text-xs text-gray-600' }, 'When to remind for refill') ]),
+                  h('select', { value: settings.refillDays, onChange: (e) => setSettings(s => ({...s, refillDays:e.target.value})), className:'px-3 py-1 rounded-md border text-sm' }, [
+                    h('option', { value:'3' }, '3 days'),
+                    h('option', { value:'5' }, '5 days'),
+                    h('option', { value:'7' }, '7 days'),
+                    h('option', { value:'14' }, '14 days'),
+                  ])
+                ]),
+                h('div', { className:'flex items-center justify-between' }, [
+                  h('div', null, [ h('div', { className:'text-base font-medium' }, 'Track Missed Doses'), h('p', { className:'text-sm text-gray-600' }, 'Show missed medication alerts') ]),
+                  h('button', { onClick: () => setSettings(s => ({...s, showMissedDose: !s.showMissedDose})), className:`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${settings.showMissedDose ? 'bg-blue-600' : 'bg-gray-300'}` },
+                    h('span', { className:`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${settings.showMissedDose ? 'translate-x-6' : 'translate-x-1'}` })
+                  )
+                ])
+              ])
+            ]),
+
+            h(Card, { key:'privacy', className: settings.darkMode ? 'card' : '' }, [
+              h('div', { key:'header', className:'p-4 sm:p-6 border-b' }, [
+                h('h2', { className:'text-xl font-semibold flex items-center gap-2' }, ['🔒','Data & Privacy']),
+                h('p', { className:'text-sm text-gray-600 mt-1' }, 'Manage your data')
+              ]),
+              h('div', { key:'content', className:'p-4 sm:p-6 space-y-4' }, [
+                h('button', {
+                  onClick: () => {
+                    const data = { medications, settings, intakeLogs, exportDate: new Date().toISOString() };
+                    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a'); a.href = url;
+                    a.download = `dawa-time-backup-${new Date().toISOString().split('T')[0]}.json`;
+                    a.click();
+                  },
+                  className:'w-full px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors'
+                }, '📥 Export Data'),
+                h('button', {
+                  onClick: () => {
+                    if (confirm('This will clear all medications and settings. Are you sure?')) {
+                      localStorage.clear();
+                      setMedications([]); setIntakeLogs([]); location.reload();
+                    }
+                  },
+                  className:'w-full px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors'
+                }, '🗑️ Clear All Data')
+              ])
+            ]),
+
+            h(Card, { key:'about', className: settings.darkMode ? 'card' : '' }, [
+              h('div', { key:'header', className:'p-4 sm:p-6 border-b' }, [
+                h('h2', { className:'text-xl font-semibold flex items-center gap-2' }, ['ℹ️','About']),
+                h('p', { className:'text-sm text-gray-600 mt-1' }, 'App information')
+              ]),
+              h('div', { key:'content', className:'p-4 sm:p-6 space-y-2' }, [
+                h('div', { className:'flex justify-between' }, [ h('span', { className:'font-medium' }, 'Version'), h('span', { className:'text-gray-600' }, '2.0.0') ]),
+                h('div', { className:'pt-4 text-center text-sm text-gray-600' }, 'Made with ❤️ for better health management')
+              ])
+            ])
+          ]),
+
+          h(Dialog, { key:'dialog', open: isAddDialogOpen, onOpenChange: setIsAddDialogOpen }, [
+            h('h2', { key:'title', className:'text-xl font-semibold mb-4' }, 'Add New Medication'),
+            h('div', { key:'form', className:'space-y-4 max-h-[60vh] overflow-y-auto' }, [
+              h('div', null, [ h('label', { className:'block text-sm font-medium mb-1' }, 'Medication Name *'), h(Input, { value:newMed.name, onChange:(e)=>setNewMed(s=>({...s,name:e.target.value})), placeholder:'e.g., Aspirin' }) ]),
+              h('div', null, [ h('label', { className:'block text-sm font-medium mb-1' }, 'Dosage *'), h(Input, { value:newMed.dosage, onChange:(e)=>setNewMed(s=>({...s,dosage:e.target.value})), placeholder:'e.g., 100mg tablet' }) ]),
+              h('div', null, [ h('label', { className:'block text-sm font-medium mb-1' }, 'Description'), h('textarea', { value:newMed.description, onChange:(e)=>setNewMed(s=>({...s,description:e.target.value})), placeholder:'What is this medication for?', className:'flex w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500', rows:2 }) ]),
+              h('div', null, [
+                h('div', { className:'flex items-center justify-between mb-1' }, [
+                  h('label', { className:'block text-sm font-medium' }, 'Schedule Times'),
+                  h('button', { type:'button', onClick: () => setNewMed(s=>({...s,scheduleTimes:[...s.scheduleTimes,'']})), className:'text-blue-600 text-sm hover:text-blue-700' }, '+ Add time')
+                ]),
+                newMed.scheduleTimes.map((time, index) =>
+                  h('div', { key:index, className:'flex gap-2 mb-2' }, [
+                    h(Input, { type:'time', value:time, onChange:(e)=>setNewMed(s=>{const times=[...s.scheduleTimes];times[index]=e.target.value;return {...s,scheduleTimes:times};}) }),
+                    newMed.scheduleTimes.length > 1 && h('button', { type:'button', onClick:()=>setNewMed(s=>{const times=s.scheduleTimes.filter((_,i)=>i!==index);return {...s,scheduleTimes:times.length?times:['']};}), className:'px-2 py-1 text-red-500 hover:text-red-700' }, '✕')
+                  ])
+                )
+              ]),
+              h('div', null, [
+                h('label', { className:'block text-sm font-medium mb-1' }, 'Frequency'),
+                h('select', {
+                  value: newMed.frequency,
+                  onChange:(e)=>{
+                    const freq = e.target.value;
+                    const presets = {
+                      twice:['08:00','20:00'],
+                      thrice:['08:00','14:00','20:00'],
+                      four:['06:00','12:00','18:00','22:00'],
+                      every4hours:['00:00','04:00','08:00','12:00','16:00','20:00'],
+                      every6hours:['00:00','06:00','12:00','18:00'],
+                      every8hours:['06:00','14:00','22:00'],
+                      every12hours:['08:00','20:00']
+                    };
+                    const next = { ...newMed, frequency:freq };
+                    if (presets[freq]) next.scheduleTimes = presets[freq];
+                    setNewMed(next);
+                  },
+                  className:'flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500'
+                }, [
+                  h('option',{value:'daily'},'Once daily'),
+                  h('option',{value:'twice'},'Twice daily'),
+                  h('option',{value:'thrice'},'Three times daily'),
+                  h('option',{value:'four'},'Four times daily'),
+                  h('option',{value:'every4hours'},'Every 4 hours'),
+                  h('option',{value:'every6hours'},'Every 6 hours'),
+                  h('option',{value:'every8hours'},'Every 8 hours'),
+                  h('option',{value:'every12hours'},'Every 12 hours'),
+                  h('option',{value:'weekly'},'Weekly'),
+                  h('option',{value:'biweekly'},'Every 2 weeks'),
+                  h('option',{value:'monthly'},'Monthly'),
+                  h('option',{value:'asNeeded'},'As needed (PRN)'),
+                  h('option',{value:'custom'},'Custom schedule'),
+                ])
+              ]),
+              h('div', { className:'grid grid-cols-2 gap-2' }, [
+                h('div', null, [ h('label', { className:'block text-sm font-medium mb-1' }, 'Start Date'), h(Input, { type:'date', value:newMed.startDate, onChange:(e)=>setNewMed(s=>({...s,startDate:e.target.value})) }) ]),
+                h('div', null, [ h('label', { className:'block text-sm font-medium mb-1' }, 'End Date (optional)'), h(Input, { type:'date', value:newMed.endDate, onChange:(e)=>setNewMed(s=>({...s,endDate:e.target.value})), min:newMed.startDate }) ])
+              ]),
+              h('div', null, [ h('label', { className:'block text-sm font-medium mb-1' }, 'Special Instructions'), h('textarea', { value:newMed.instructions, onChange:(e)=>setNewMed(s=>({...s,instructions:e.target.value})), placeholder:'e.g., Take with food, avoid alcohol', className:'flex w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500', rows:2 }) ]),
+              h('div', null, [
+                h('label', { className:'block text-sm font-medium mb-1' }, 'Color Label'),
+                h('div', { className:'flex gap-2' },
+                  ['blue','green','orange','purple','pink'].map(color =>
+                    h('button', {
+                      key:color, type:'button', onClick:()=>setNewMed(s=>({...s,color})),
+                      className:`w-8 h-8 rounded-full border-2 ${color==='blue'?'bg-blue-500':color==='green'?'bg-green-500':color==='orange'?'bg-orange-500':color==='purple'?'bg-purple-500':'bg-pink-500'} ${newMed.color===color ? 'ring-2 ring-offset-2 ring-gray-400' : ''}`
+                    })
+                  )
+                )
+              ])
+            ]),
+            h('div', { key:'footer', className:'mt-6 flex justify-end gap-2 border-t pt-4' }, [
+              h(Button, { key:'cancel', variant:'outline', onClick:()=>setIsAddDialogOpen(false) }, 'Cancel'),
+              h(Button, { key:'add', onClick:handleAddMedication, disabled:!newMed.name || !newMed.dosage }, 'Add Medication')
+            ])
+          ])
+        ]),
+
+        h('div', { key:'nav', className:`fixed bottom-0 left-0 right-0 border-t ${settings.darkMode ? 'bg-gray-900/95 border-gray-700' : 'bg-white/95'} backdrop-blur safe-bottom` },
+          h('div', { className:'flex justify-around max-w-md mx-auto h-16 sm:h-16' },
+            [
+              ['medications','💊','Medicines'],
+              ['home','🏠','Home'],
+              ['settings','⚙️','Settings']
+            ].map(([tab, icon, label]) =>
+              h('button', {
+                key:tab, onClick:()=>setActiveTab(tab),
+                className:`flex flex-col items-center justify-center flex-1 transition-colors py-1 ${
+                  activeTab === tab
+                    ? (settings.darkMode ? 'text-blue-400 bg-blue-500/10' : 'text-blue-600 bg-blue-50')
+                    : (settings.darkMode ? 'text-gray-400 hover:text-gray-200' : 'text-gray-600 hover:text-gray-900')
+                }`
+              }, [
+                h('span', { key:'icon', className:'text-2xl relative' }, icon),
+                h('span', { key:'label', className:'text-[11px] mt-0.5 sm:text-xs' }, label)
+              ])
+            )
+          )
+        )
+      ]);
+    }
+
+    ReactDOM.createRoot(document.getElementById('app')).render(h(App));
+
+    let deferredPrompt;
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredPrompt = e;
+      document.getElementById('installPrompt').style.display = 'block';
+    });
+
+    document.getElementById('installBtn').addEventListener('click', async () => {
+      if (deferredPrompt) {
+        deferredPrompt.prompt();
+        await deferredPrompt.userChoice;
+        deferredPrompt = null;
+        document.getElementById('installPrompt').style.display = 'none';
+      }
+    });
+
+    document.getElementById('dismissBtn').addEventListener('click', () => {
+      document.getElementById('installPrompt').style.display = 'none';
+    });
+
+    window.addEventListener('appinstalled', () => {
+      document.getElementById('installPrompt').style.display = 'none';
+    });
+
+  </script>
+</body>
+</html>
